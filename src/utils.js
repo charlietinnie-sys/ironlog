@@ -40,7 +40,8 @@ export function getCalendarDays(year, month) {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const days = [];
-  const startPadding = firstDay.getDay();
+  // getDay(): 0=周日,1=周一,...,6=周六；表头按 周一~周日 排列，转换一下
+  const startPadding = (firstDay.getDay() + 6) % 7;
   for (let i = 0; i < startPadding; i++) {
     days.push(null);
   }
