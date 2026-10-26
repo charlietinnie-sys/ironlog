@@ -64,6 +64,12 @@ export default function History({ onDateSelect }) {
     setCurrentDate(new Date());
   };
 
+  const getPlanNamesFromMeta = (meta) => {
+    if (meta.planNames && Array.isArray(meta.planNames)) return meta.planNames;
+    if (meta.planName) return [meta.planName];
+    return [];
+  };
+
   const getDayInfo = (dateStr) => {
     const items = workoutsByDate[dateStr] || [];
     const meta = dayMetaByDate[dateStr] || {};
@@ -119,8 +125,9 @@ export default function History({ onDateSelect }) {
           const hasData = info.items.length > 0;
           const isToday = day.date === todayStr();
           const isSelected = expandedDate === day.date;
-          const planName = info.meta.planName;
-          const colorClass = planName ? planColorMap[planName] || 'bg-gray-500' : 'bg-accent/30';
+          const planNames = getPlanNamesFromMeta(info.meta);
+          const primaryPlan = planNames[0];
+          const colorClass = primaryPlan ? planColorMap[primaryPlan] || 'bg-gray-500' : 'bg-accent/30';
 
           return html`
             <div
@@ -138,10 +145,19 @@ export default function History({ onDateSelect }) {
                   <span className="text-sm ${hasData ? 'text-white' : 'text-muted'}">${day.day}</span>
                 </div>
                 ${hasData && html`
-                  <div className="flex-shrink-0 pb-0.5 px-0.5">
-                    <div className="${colorClass} text-white text-[10px] px-1 py-0.5 rounded truncate text-center">
-                      ${planName ? planName.substring(0, 6) : info.meta.duration ? `${info.meta.duration}min` : '训练'}
-                    </div>
+                  <div className="flex-shrink-0 pb-0.5 px-0.5 space-y-0.5">
+                    ${planNames.length > 0
+                      ? planNames.slice(0, 2).map((pn, i) => html`
+                          <div key=${i} className="${planColorMap[pn] || 'bg-gray-500'} text-white text-[10px] px-1 py-0.5 rounded truncate text-center leading-tight">
+                            ${pn.substring(0, 6)}${i === 1 && planNames.length > 2 ? '+' : ''}
+                          </div>
+                        `)
+                      : html`
+                          <div className="${colorClass} text-white text-[10px] px-1 py-0.5 rounded truncate text-center">
+                            ${info.meta.duration ? `${info.meta.duration}min` : '训练'}
+                          </div>
+                        `
+                    }
                   </div>
                 `}
               </div>
@@ -208,11 +224,18 @@ function renderDayDetail(dateStr) {
     `;
   }
 
+  const planNames = (() => {
+    if (meta.planNames && Array.isArray(meta.planNames)) return meta.planNames;
+    if (meta.planName) return [meta.planName];
+    return [];
+  })();
+
   return html`
     <div className="space-y-2">
-      ${meta.planName && html`
+      ${planNames.length > 0 && html`
         <div className="bg-accent/10 border border-accent/30 rounded-lg px-3 py-2">
-          <span className="text-xs text-accent">训练计划：${meta.planName}</span>
+          <span className="text-xs text-muted">训练计划：</span>
+          <span className="text-xs text-accent font-medium">${planNames.join(' + ')}</span>
         </div>
       `}
       ${workouts.map(w => html`

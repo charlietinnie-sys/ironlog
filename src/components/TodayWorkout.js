@@ -23,6 +23,7 @@ export default function TodayWorkout({ onChange, initialDate }) {
   const [duration, setDuration] = useState('');
   const [maxHeartRate, setMaxHeartRate] = useState('');
   const [avgHeartRate, setAvgHeartRate] = useState('');
+  const [loadedPlanNames, setLoadedPlanNames] = useState([]);
 
   useEffect(() => {
     refresh();
@@ -35,6 +36,14 @@ export default function TodayWorkout({ onChange, initialDate }) {
     setDuration(meta.duration ? String(meta.duration) : '');
     setMaxHeartRate(meta.maxHeartRate ? String(meta.maxHeartRate) : '');
     setAvgHeartRate(meta.avgHeartRate ? String(meta.avgHeartRate) : '');
+    // 兼容旧数据：planName (字符串) 或 planNames (数组)
+    if (meta.planNames && Array.isArray(meta.planNames)) {
+      setLoadedPlanNames(meta.planNames);
+    } else if (meta.planName) {
+      setLoadedPlanNames([meta.planName]);
+    } else {
+      setLoadedPlanNames([]);
+    }
     setEditingId(null);
     setExercise('');
     setEquipment('');
@@ -122,7 +131,11 @@ export default function TodayWorkout({ onChange, initialDate }) {
         note: '',
       });
     });
-    setDayMeta(selectedDate, { planName: plan.name });
+    // 追加计划名，去重
+    const currentNames = getDayMeta(selectedDate).planNames ||
+      (getDayMeta(selectedDate).planName ? [getDayMeta(selectedDate).planName] : []);
+    const merged = Array.from(new Set([...currentNames, plan.name]));
+    setDayMeta(selectedDate, { planNames: merged, planName: merged.join('+') });
     setShowPlanPicker(false);
     refresh();
     onChange();
@@ -161,7 +174,7 @@ export default function TodayWorkout({ onChange, initialDate }) {
 
       ${showPlanPicker && plans.length > 0 && html`
         <div className="mb-4 p-3 bg-card border border-border rounded-xl">
-          <p className="text-xs text-muted mb-2">选择一套训练计划加载：</p>
+          <p className="text-xs text-muted mb-2">选择一套训练计划加载（可多次加载多套）：</p>
           <div className="flex flex-wrap gap-2">
             ${plans.map(plan => html`
               <button
@@ -171,6 +184,19 @@ export default function TodayWorkout({ onChange, initialDate }) {
               >
                 ${plan.name}
               </button>
+            `)}
+          </div>
+        </div>
+      `}
+
+      ${loadedPlanNames.length > 0 && html`
+        <div className="mb-4 p-3 bg-accent/10 border border-accent/30 rounded-xl">
+          <p className="text-xs text-muted mb-2">今日已加载计划：</p>
+          <div className="flex flex-wrap gap-2">
+            ${loadedPlanNames.map(name => html`
+              <span key=${name} className="px-2.5 py-1 text-xs bg-accent/20 text-accent rounded-lg">
+                ${name}
+              </span>
             `)}
           </div>
         </div>
